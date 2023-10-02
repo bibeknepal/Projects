@@ -37,7 +37,6 @@ for ch in checkbox[8:47]:
         domain_name.append(domain)
         print(domain)
         driver.back()
-    print(len(domain_name))
 
     ch.click()
     # time.sleep(3)
