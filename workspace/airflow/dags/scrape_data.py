@@ -51,7 +51,7 @@ def update_database():
     df = pd.read_csv("scrapped_data.csv")
     data= df.to_dict(orient='records')
 
-    client = MongoClient('mongodb://localhost:27017/')
+    client = MongoClient('host.docker.internal',27017)
     db = client['stock_data']
     collection = db['live_market']
     try:
