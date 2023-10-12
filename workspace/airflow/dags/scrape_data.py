@@ -76,12 +76,12 @@ def update_database():
 
 # Define default_args for the DAG
 default_args = {
-    'start_date': local_tz.datetime(2023, 10, 12,11,0), #starts at 7:55
+    'start_date': local_tz.datetime(2023, 10, 12,10,0), #starts at 7:55
     'retries': 0,
 }
 
 # Create a DAG object
-dag = DAG('StockScraping_Dag', default_args=default_args, schedule_interval='*/5 11-14 * * 0-5',catchup=False)  #Runs every 5 min from 11AM-3PM Sunday- Friday
+dag = DAG('StockScraping_Dag', default_args=default_args, schedule_interval=None,catchup=False)  #Runs every 5 min from 11AM-3PM Sunday- Friday
 
 # Define tasks
 scrape_data = PythonOperator(
