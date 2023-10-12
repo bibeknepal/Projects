@@ -1,3 +1,5 @@
 airflow_env
 airflow/logs
 airflow/dags/__pycache__
+mongodb_data
+airflow/airflow.db
