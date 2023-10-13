@@ -2,7 +2,10 @@ version: '3'
 
 services:
   airflow-bibek:
-    image: airflow-bibek:latest
+    build:
+      context: .
+      dockerfile: Dockerfile  
+    image: airflow-image:latest
     volumes:
       - ./airflow:/opt/airflow
     ports:
@@ -23,3 +26,23 @@ services:
       - ./mongodb_data:/data/db
     depends_on:
       - airflow-bibek
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - ./postgres-db-volume:/var/lib/postgresql/data
+    ports:
+      - 54320:5432
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    restart: always
+      
+
+
+

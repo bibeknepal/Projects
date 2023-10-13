@@ -69,7 +69,7 @@ def update_database():
             collection.insert_one(entry)
     
     print("Database updated with new data.")
-    file = open(r'logs/log.txt','a')
+    file = open(r'log.txt','a')
     file.write(f"This Script ran at:  {datetime.now(local_tz)}.\n")
     
 

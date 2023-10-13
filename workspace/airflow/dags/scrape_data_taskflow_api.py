@@ -13,12 +13,12 @@ local_tz = pendulum.timezone('Asia/Kathmandu')
 
 default_args = {
     'owner':'bibek',
-    'start_date': local_tz.datetime(2023, 10, 12,10,0), #starts at 7:55
+    'start_date': local_tz.datetime(2023, 10, 12,11,0), 
     'retries': 0
 }
 @dag(dag_id='dag_with_taskflowapi',
      default_args=default_args,
-     schedule_interval=None,
+     schedule_interval='5 11-15 * * 0-4',
      catchup=False)
 
 def functionscrape():
