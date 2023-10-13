@@ -1,15 +1,23 @@
-from airflow import DAG
+from airflow import DAG 
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.operators.python import PythonOperator
 import pendulum
-from datetime import datetime
+from datetime import datetime,timedelta
 import requests
 import random
 from bs4 import BeautifulSoup
-from pymongo import MongoClient
 import pandas as pd
+import logging,csv
 
 local_tz = pendulum.timezone('Asia/Kathmandu')
 
+defaut_args = {
+    "retries":1,
+    "retry_delay" : timedelta(minutes=5),
+    'start_date': datetime(2023, 10, 12,11,0)
+}
+
+dag = DAG("dag_with_postgres_hook",default_args=defaut_args,schedule=None,catchup=False)
 
 def scrape_page():
     url = 'https://merolagani.com/LatestMarket.aspx'
@@ -45,56 +53,64 @@ def scrape_page():
     final_data_df = pd.DataFrame(final_data)
     final_data_df.to_csv("scrapped_data.csv",index=False)
 
+
+
+def create_table():
+    hook = PostgresHook(postgres_conn_id='postgres_connection')
+    conn = hook.get_conn()
+    cursor = conn.cursor()
+    
+    sql = """CREATE TABLE IF NOT EXISTS public.stock_data (
+        symbol character varying,
+        LTP real,
+        Percentage_Change real,
+        High real,
+        Low real,
+        open real,
+        Quantity real
+    )"""
+    print(f"Executing SQL: {sql}")
+    cursor.execute(sql)
+    conn.commit()
+    logging.info("Table created successfully")
+
+
+def insert_data():
+    hook = PostgresHook(postgres_conn_id='postgres_connection')
+    conn = hook.get_conn()
+    cursor = conn.cursor()
+
+
+    with open('scrapped_data.csv', 'r') as f:
+        reader = csv.reader(f)
+        next(reader)
+        for row in reader:
+            cursor.execute(
+                """insert into stock_data values (%s, %s, %s, %s, %s, %s, %s)""",row
+            )
+        conn.commit()
+        cursor.close()
+        logging.info("Inserted Data Successfully.")
         
 
-def update_database():
-    df = pd.read_csv("scrapped_data.csv")
-    data= df.to_dict(orient='records')
 
-    client = MongoClient('host.docker.internal',27017)
-    db = client['stock_data']
-    collection = db['live_market']
-    try:
-        client.server_info()  # This will test the connection
-        print("Connected to MongoDB")
-    except Exception as e:
-        print(f"Connection error: {e}")
-
-    for entry in data:
-        existing_entry = collection.find_one({'Symbol':entry['Symbol']})
-        if existing_entry:
-            collection.update_one({'Symbol':entry['Symbol']},{'$set':entry})
-            
-        else:
-            collection.insert_one(entry)
-    
-    print("Database updated with new data.")
-    file = open(r'log.txt','a')
-    file.write(f"This Script ran at:  {datetime.now(local_tz)}.\n")
-    
-
-
-# Define default_args for the DAG
-default_args = {
-    'start_date': local_tz.datetime(2023, 10, 12,10,0), #starts at 7:55
-    'retries': 0,
-}
-
-# Create a DAG object
-dag = DAG('StockScraping_Dag', default_args=default_args, schedule_interval=None,catchup=False)  
-
-# Define tasks
 scrape_data = PythonOperator(
     task_id = 'scrape_data',
     python_callable= scrape_page,
     dag = dag
 )
 
-update_db = PythonOperator(
-    task_id = 'update_db',
-    python_callable= update_database,
-    dag = dag
+
+create_table_if_not_present = PythonOperator(
+    task_id = 'create_table',
+    python_callable= create_table,
+    dag = dag,
+    provide_context=True,
+)
+insert_data_in_table = PythonOperator(
+     task_id = 'insert_data',
+     python_callable= insert_data,
+     dag = dag
 )
 
-# Set task dependencies
-scrape_data >> update_db
+scrape_data >>create_table_if_not_present >> insert_data_in_table
