@@ -4,3 +4,4 @@ airflow/dags/__pycache__
 mongodb_data/
 airflow/airflow.db
 postgres-db-volume/
+airflow/standalone_admin_password.txt
