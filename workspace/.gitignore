@@ -5,3 +5,5 @@ mongodb_data/
 airflow/airflow.db
 postgres-db-volume/
 airflow/standalone_admin_password.txt
+airflow/airflow-webserver.pid
+postgres-db-volume
